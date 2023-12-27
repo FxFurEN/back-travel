@@ -38,6 +38,33 @@ app.get('/loadLandMark', (req, res) => {
   });
 });
 
+app.get('/loadEntertaiment', (req, res) => {
+  sql.open(conn_str, function (err, conn) {
+    if (err) {
+      console.error('Error opening the connection:', err);
+      res.status(500).json({ error: 'Ошибка при открытии соединения с базой данных' });
+      return;
+    }
+
+    // Измененный SQL-запрос для выбора данных о развлечениях
+    conn.query('SELECT Title_Entertaiment, En_Description, ImageData FROM tbl_Entertaiment', function (err, result) {
+      if (err) {
+        console.error('Ошибка при выполнении запроса:', err);
+        res.status(500).json({ error: 'Ошибка при выполнении запроса к базе данных' });
+      } else {
+        if (!result) {
+          res.json([]); // Return an empty array if the result is null
+        } else {
+          res.json(result);
+        }
+      }
+
+      conn.close();
+    });
+  });
+});
+
+
 app.post('/addLandmark', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'mapImage', maxCount: 1 }]), (req, res) => {
   sql.open(conn_str, function (err, conn) {
     if (err) {
@@ -66,6 +93,37 @@ app.post('/addLandmark', upload.fields([{ name: 'image', maxCount: 1 }, { name: 
     });
   });
 });
+
+// Modify the endpoint to handle only one image
+app.post('/addEntertainment', upload.single('image'), (req, res) => {
+  sql.open(conn_str, function (err, conn) {
+    if (err) {
+      console.error('Error opening the connection:', err);
+      res.status(500).json({ error: 'Ошибка при открытии соединения с базой данных' });
+      return;
+    }
+
+    const titleEntertainment = req.body.titleEntertainment;
+    const enDescription = req.body.enDescription;
+    const imageBinary = req.file.buffer;
+
+    // Modify the SQL query to insert data into tbl_Entertaiment
+    const query = "INSERT INTO tbl_Entertaiment (Title_Entertaiment, En_Description, ImageData) VALUES (?, ?, ?)";
+    const parameters = [titleEntertainment, enDescription, imageBinary];
+
+    conn.query(query, parameters, function (err, result) {
+      if (err) {
+        console.error('Ошибка при выполнении запроса:', err);
+        res.status(500).json({ error: 'Ошибка при выполнении запроса к базе данных' });
+      } else {
+        res.status(200).json({ success: true });
+      }
+
+      conn.close();
+    });
+  });
+});
+
 
 app.listen(port, () => {
   console.log(`Сервер запущен на порту ${port}`);
