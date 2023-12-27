@@ -25,7 +25,7 @@ app.get('/loadLandMark', (req, res) => {
     }
 
     // Измененный SQL-запрос для выбора и NameLandMark, и ImageData
-    conn.query('SELECT ID, NameLandMark, ImageData FROM tbl_LandMark', function (err, result) {
+    conn.query('SELECT ID, NameLandMark, ImageData, ImageMapData FROM tbl_LandMark', function (err, result) {
       if (err) {
         console.error('Ошибка при выполнении запроса:', err);
         res.status(500).json({ error: 'Ошибка при выполнении запроса к базе данных' });
@@ -38,7 +38,7 @@ app.get('/loadLandMark', (req, res) => {
   });
 });
 
-app.post('/addLandmark', upload.single('image'), (req, res) => {
+app.post('/addLandmark', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'mapImage', maxCount: 1 }]), (req, res) => {
   sql.open(conn_str, function (err, conn) {
     if (err) {
       console.error('Error opening the connection:', err);
@@ -47,11 +47,12 @@ app.post('/addLandmark', upload.single('image'), (req, res) => {
     }
 
     const nameLandmark = req.body.nameLandmark;
-    const imageBinary = req.file.buffer;
+    const imageBinary = req.files['image'][0].buffer;
+    const mapImageBinary = req.files['mapImage'][0].buffer;
 
     // Пример запроса в базу данных для сохранения данных
-    const query = "INSERT INTO tbl_LandMark (NameLandMark, ImageData) VALUES (?, ?)";
-    const parameters = [nameLandmark, imageBinary];
+    const query = "INSERT INTO tbl_LandMark (NameLandMark, ImageData, ImageMapData) VALUES (?, ?, ?)";
+    const parameters = [nameLandmark, imageBinary, mapImageBinary];
 
     conn.query(query, parameters, function (err, result) {
       if (err) {
@@ -65,7 +66,6 @@ app.post('/addLandmark', upload.single('image'), (req, res) => {
     });
   });
 });
-
 
 app.listen(port, () => {
   console.log(`Сервер запущен на порту ${port}`);
